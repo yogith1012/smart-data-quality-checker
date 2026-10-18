@@ -1,141 +1,21 @@
-const API_URL = "http://localhost:8080/api/customers";
-const QUALITY_API_URL = "http://localhost:8080/api/quality-summary";
+/*
+ * Smart Data Quality Checker
+ * Free GitHub Pages demonstration version
+ * Uses sample data; no backend required.
+ */
 
-let allCustomers = [];
-
-
-// 1. Load customer data from Spring Boot.
-async function loadCustomers() {
-    const customerTable = document.getElementById("customerTable");
-    const tableNote = document.getElementById("tableNote");
-    const refreshBtn = document.getElementById("refreshBtn");
-
-    try {
-        if (refreshBtn) {
-            refreshBtn.disabled = true;
-            refreshBtn.textContent = "Loading...";
-        }
-
-        tableNote.textContent = "Loading customer records...";
-
-        const response = await fetch(API_URL);
-
-        if (!response.ok) {
-            throw new Error("Unable to fetch customer records.");
-        }
-
-        const data = await response.json();
-
-        allCustomers = data.map(function(customer) {
-            return {
-                id: customer.customerId,
-                name: customer.customerName ?? "",
-                email: customer.email ?? "",
-                phone: customer.phone ?? "",
-                city: customer.city ?? ""
-            };
-        });
-
-        displayCustomers();
-
-        // Load the quality summary calculated by Java.
-        await loadQualitySummary(false);
-
-    } catch (error) {
-        console.error("Customer loading error:", error);
-
-        customerTable.innerHTML = `
-            <tr>
-                <td colspan="6">
-                    Could not load customer data.
-                    Check that Spring Boot is running.
-                </td>
-            </tr>
-        `;
-
-        tableNote.textContent = "Unable to load customer records.";
-
-    } finally {
-        if (refreshBtn) {
-            refreshBtn.disabled = false;
-            refreshBtn.textContent = "↻ Refresh Data";
-        }
-    }
-}
+let allCustomers = [
+    { id: 1, name: "Arun", email: "arun@gmail.com", phone: "9876543210", city: "Erode" },
+    { id: 2, name: "Priya", email: "", phone: "9876543211", city: "Salem" },
+    { id: 3, name: "Arun", email: "arun@gmail.com", phone: "9876543210", city: "Erode" },
+    { id: 4, name: "Ravi", email: "ravi123", phone: "", city: "Coimbatore" },
+    { id: 5, name: "Meena", email: "meena@gmail.com", phone: "9876543214", city: "" },
+    { id: 6, name: "Yogi", email: "yogith3553@gmail.com", phone: "9360137605", city: "Trichy" },
+    { id: 7, name: "Divya", email: "divya@gmail.com", phone: "9876543216", city: "Salem" }
+];
 
 
-// 2. Load the quality summary from Spring Boot.
-async function loadQualitySummary(showAlert = false) {
-    try {
-        const response = await fetch(QUALITY_API_URL);
-
-        if (!response.ok) {
-            throw new Error("Unable to fetch quality summary.");
-        }
-
-        const summary = await response.json();
-
-        // Update summary cards.
-        document.getElementById("totalRecords").textContent =
-            summary.totalRecords;
-
-        document.getElementById("duplicateGroups").textContent =
-            summary.duplicateGroups;
-
-        document.getElementById("missingRecords").textContent =
-            summary.missingRecords;
-
-        document.getElementById("invalidEmails").textContent =
-            summary.invalidEmails;
-
-        // Update quality overview.
-        document.getElementById("duplicateOverview").textContent =
-            summary.duplicateGroups;
-
-        document.getElementById("missingOverview").textContent =
-            summary.missingRecords;
-
-        document.getElementById("emailOverview").textContent =
-            summary.invalidEmails;
-
-        document.getElementById("phoneOverview").textContent =
-            summary.invalidPhones;
-
-        const statusBadge = document.querySelector(".status-badge");
-
-        if (statusBadge) {
-            statusBadge.textContent = "Quality Check Completed";
-        }
-
-        if (showAlert) {
-            alert(
-                "Quality Check Completed!\n\n" +
-                "Total Records: " + summary.totalRecords + "\n" +
-                "Duplicate Groups: " + summary.duplicateGroups + "\n" +
-                "Records with Missing Values: " + summary.missingRecords + "\n" +
-                "Invalid Emails: " + summary.invalidEmails + "\n" +
-                "Invalid Phone Numbers: " + summary.invalidPhones
-            );
-        }
-
-        return summary;
-
-    } catch (error) {
-        console.error("Quality summary error:", error);
-
-        if (showAlert) {
-            alert(
-                "Could not load the quality summary.\n" +
-                "Please check that Spring Boot is running."
-            );
-        }
-
-        return null;
-    }
-}
-
-
-// 3. Check whether a field is missing.
+// 1. Check whether a value is missing.
 function isMissing(value) {
     return value === null ||
         value === undefined ||
@@ -144,34 +24,39 @@ function isMissing(value) {
 }
 
 
-// 4. Check email format.
+// 2. Check email format.
 function isInvalidEmail(email) {
     return !isMissing(email) &&
         !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 
-// 5. Check phone number format.
+// 3. Check phone number format.
 function isInvalidPhone(phone) {
     return !isMissing(phone) &&
         !/^[0-9]{10}$/.test(phone.trim());
 }
 
 
-// 6. Find duplicate customer records.
+// 4. Create a key to identify duplicate records.
+function getCustomerKey(customer) {
+    return [
+        customer.name,
+        customer.email,
+        customer.phone,
+        customer.city
+    ].map(function(value) {
+        return String(value ?? "").trim().toLowerCase();
+    }).join("|");
+}
+
+
+// 5. Find duplicate customer records.
 function getDuplicateKeys() {
     const counts = {};
 
     allCustomers.forEach(function(customer) {
-        const key = [
-            customer.name,
-            customer.email,
-            customer.phone,
-            customer.city
-        ].map(function(value) {
-            return String(value ?? "").trim().toLowerCase();
-        }).join("|");
-
+        const key = getCustomerKey(customer);
         counts[key] = (counts[key] || 0) + 1;
     });
 
@@ -183,17 +68,39 @@ function getDuplicateKeys() {
 }
 
 
-// 7. Get the status of a customer.
-function getCustomerStatus(customer, duplicateKeys) {
-    const key = [
-        customer.name,
-        customer.email,
-        customer.phone,
-        customer.city
-    ].map(function(value) {
-        return String(value ?? "").trim().toLowerCase();
-    }).join("|");
+// 6. Calculate quality summary from sample data.
+function calculateQualitySummary() {
+    const duplicateKeys = getDuplicateKeys();
 
+    return {
+        totalRecords: allCustomers.length,
+
+        // Number of distinct duplicate groups.
+        duplicateGroups: duplicateKeys.size,
+
+        // Number of records with at least one missing field.
+        missingRecords: allCustomers.filter(function(customer) {
+            return [
+                customer.name,
+                customer.email,
+                customer.phone,
+                customer.city
+            ].some(isMissing);
+        }).length,
+
+        invalidEmails: allCustomers.filter(function(customer) {
+            return isInvalidEmail(customer.email);
+        }).length,
+
+        invalidPhones: allCustomers.filter(function(customer) {
+            return isInvalidPhone(customer.phone);
+        }).length
+    };
+}
+
+
+// 7. Get the quality status of one customer.
+function getCustomerStatus(customer, duplicateKeys) {
     const missing = [
         customer.name,
         customer.email,
@@ -205,7 +112,7 @@ function getCustomerStatus(customer, duplicateKeys) {
         isInvalidEmail(customer.email) ||
         isInvalidPhone(customer.phone);
 
-    if (duplicateKeys.has(key)) {
+    if (duplicateKeys.has(getCustomerKey(customer))) {
         return {
             label: "Duplicate",
             className: "duplicate"
@@ -233,10 +140,41 @@ function getCustomerStatus(customer, duplicateKeys) {
 }
 
 
-// 8. Display customer records in the HTML table.
+// 8. Update dashboard summary cards.
+function displayQualitySummary(summary) {
+    const fields = {
+        totalRecords: summary.totalRecords,
+        duplicateGroups: summary.duplicateGroups,
+        missingRecords: summary.missingRecords,
+        invalidEmails: summary.invalidEmails,
+        duplicateOverview: summary.duplicateGroups,
+        missingOverview: summary.missingRecords,
+        emailOverview: summary.invalidEmails,
+        phoneOverview: summary.invalidPhones
+    };
+
+    Object.entries(fields).forEach(function(entry) {
+        const element = document.getElementById(entry[0]);
+
+        if (element) {
+            element.textContent = entry[1];
+        }
+    });
+
+    const badge = document.querySelector(".status-badge");
+
+    if (badge) {
+        badge.textContent = "Quality Check Completed";
+    }
+}
+
+
+// 9. Display customer records in the table.
 function displayCustomers() {
     const customerTable = document.getElementById("customerTable");
     const searchInput = document.getElementById("searchInput");
+
+    if (!customerTable) return;
 
     const duplicateKeys = getDuplicateKeys();
 
@@ -254,7 +192,9 @@ function displayCustomers() {
             customer.phone,
             customer.city
         ].some(function(value) {
-            return String(value ?? "").toLowerCase().includes(searchText);
+            return String(value ?? "")
+                .toLowerCase()
+                .includes(searchText);
         });
     });
 
@@ -289,19 +229,58 @@ function displayCustomers() {
         customerTable.appendChild(row);
     });
 
-    document.getElementById("tableNote").textContent =
-        "Showing " + filteredCustomers.length +
-        " of " + allCustomers.length + " customer records.";
+    const tableNote = document.getElementById("tableNote");
+
+    if (tableNote) {
+        tableNote.textContent =
+            "Showing " + filteredCustomers.length +
+            " of " + allCustomers.length + " sample customer records.";
+    }
 }
 
 
-// 9. Run the quality check using the Java backend.
-async function runQualityCheck(showAlert = true) {
-    await loadQualitySummary(showAlert);
+// 10. Load the local sample data into the dashboard.
+function loadCustomers() {
+    const refreshBtn = document.getElementById("refreshBtn");
+
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = "Loading...";
+    }
+
+    allCustomers = allCustomers.slice();
+
+    displayCustomers();
+    displayQualitySummary(calculateQualitySummary());
+
+    if (refreshBtn) {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = "↻ Refresh Data";
+    }
 }
 
 
-// 10. Download customer records and their quality status as CSV.
+// 11. Run quality checks.
+function runQualityCheck(showAlert = true) {
+    const summary = calculateQualitySummary();
+
+    displayQualitySummary(summary);
+    displayCustomers();
+
+    if (showAlert) {
+        alert(
+            "Quality Check Completed!\n\n" +
+            "Total Records: " + summary.totalRecords + "\n" +
+            "Duplicate Groups: " + summary.duplicateGroups + "\n" +
+            "Records with Missing Values: " + summary.missingRecords + "\n" +
+            "Invalid Emails: " + summary.invalidEmails + "\n" +
+            "Invalid Phone Numbers: " + summary.invalidPhones
+        );
+    }
+}
+
+
+// 12. Download a CSV quality report.
 function downloadQualityReport() {
     if (allCustomers.length === 0) {
         alert("No customer records available to export.");
@@ -332,11 +311,9 @@ function downloadQualityReport() {
         ];
     });
 
-    // Escape special characters for valid CSV cells.
     function escapeCSV(value) {
         let text = String(value ?? "");
 
-        // Prevent spreadsheet formula execution for untrusted text.
         if (/^[\s]*[=+\-@]/.test(text)) {
             text = "'" + text;
         }
@@ -350,7 +327,6 @@ function downloadQualityReport() {
         })
         .join("\r\n");
 
-    // Add a BOM to improve UTF-8 compatibility with spreadsheet apps.
     const blob = new Blob(
         ["\uFEFF" + csvContent],
         { type: "text/csv;charset=utf-8;" }
@@ -372,15 +348,13 @@ function downloadQualityReport() {
 }
 
 
-// 11. Search customer records.
+// 13. Connect the search box.
 const searchInput = document.getElementById("searchInput");
 
 if (searchInput) {
-    searchInput.addEventListener("input", function() {
-        displayCustomers();
-    });
+    searchInput.addEventListener("input", displayCustomers);
 }
 
 
-// 12. Load live data when the page opens.
+// 14. Load sample data when the page opens.
 loadCustomers();
