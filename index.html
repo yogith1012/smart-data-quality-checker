@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Data Quality Checker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="dashboard">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo">
+            <span class="logo-icon">✓</span>
+            <span>DataQuality</span>
+        </div>
+
+        <p class="menu-title">MAIN MENU</p>
+
+        <nav>
+            <a href="#dashboard" class="nav-link active">
+                <span>▦</span> Dashboard
+            </a>
+            <a href="#customers" class="nav-link">
+                <span>▤</span> Customer Data
+            </a>
+            <a href="#quality-checks" class="nav-link">
+                <span>✓</span> Quality Checks
+            </a>
+            <a href="#reports" class="nav-link">
+                <span>▥</span> Reports
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <p>Smart Data Quality Checker</p>
+            <small>Student Project · v1.0</small>
+        </div>
+    </aside>
+
+    <!-- Main Dashboard -->
+    <main class="main-content" id="dashboard">
+
+        <!-- Header -->
+        <header class="topbar">
+            <div>
+                <h1>Dashboard</h1>
+                <p>Monitor and improve your customer data quality.</p>
+            </div>
+
+            <div class="profile">
+                <div class="avatar">DQ</div>
+                <div>
+                    <strong>Data Analyst</strong>
+                    <small>Project Workspace</small>
+                </div>
+            </div>
+        </header>
+
+        <!-- Welcome Section -->
+        <section class="welcome">
+            <div>
+                <h2>Welcome to your Data Quality Dashboard 👋</h2>
+                <p>Review customer records and identify data quality issues.</p>
+            </div>
+
+            <div class="dashboard-actions">
+                <button
+                    type="button"
+                    id="refreshBtn"
+                    onclick="loadCustomers()">
+                    ↻ Refresh Data
+                </button>
+
+                <button
+                    type="button"
+                    id="runCheckBtn"
+                    onclick="runQualityCheck()">
+                    ▶ Run Quality Check
+                </button>
+
+                <button
+                    type="button"
+                    id="downloadReportBtn"
+                    onclick="downloadQualityReport()">
+                    ↓ Download CSV Report
+                </button>
+            </div>
+        </section>
+
+        <!-- Summary Cards -->
+        <section class="summary-section">
+
+            <div class="summary-card">
+                <div class="card-icon blue">▤</div>
+                <p>Total Records</p>
+                <h2 id="totalRecords">0</h2>
+                <small>Customer records</small>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon orange">⧉</div>
+                <p>Duplicate Groups</p>
+                <h2 id="duplicateGroups">0</h2>
+                <small>Duplicate combinations</small>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon red">!</div>
+                <p>Missing Values</p>
+                <h2 id="missingRecords">0</h2>
+                <small>Records with missing data</small>
+            </div>
+
+            <div class="summary-card">
+                <div class="card-icon purple">@</div>
+                <p>Invalid Emails</p>
+                <h2 id="invalidEmails">0</h2>
+                <small>Emails needing review</small>
+            </div>
+
+        </section>
+
+        <!-- Quality Overview -->
+        <section class="content-card" id="quality-checks">
+            <div class="section-heading">
+                <div>
+                    <h2>Data Quality Overview</h2>
+                    <p>Summary of detected data issues</p>
+                </div>
+                <span class="status-badge">Waiting for Data</span>
+            </div>
+
+            <div class="quality-row">
+                <div>
+                    <span class="dot green"></span>
+                    Duplicate record groups
+                </div>
+                <strong id="duplicateOverview">0</strong>
+            </div>
+
+            <div class="quality-row">
+                <div>
+                    <span class="dot orange-dot"></span>
+                    Records with missing values
+                </div>
+                <strong id="missingOverview">0</strong>
+            </div>
+
+            <div class="quality-row">
+                <div>
+                    <span class="dot red-dot"></span>
+                    Invalid email records
+                </div>
+                <strong id="emailOverview">0</strong>
+            </div>
+
+            <div class="quality-row">
+                <div>
+                    <span class="dot green"></span>
+                    Invalid phone records
+                </div>
+                <strong id="phoneOverview">0</strong>
+            </div>
+        </section>
+
+        <!-- Customer Records -->
+        <section class="content-card" id="customers">
+            <div class="section-heading">
+                <div>
+                    <h2>Customer Records</h2>
+                    <p>Live customer data from your MySQL database</p>
+                </div>
+
+                <input
+                    type="search"
+                    id="searchInput"
+                    placeholder="Search customers..."
+                    aria-label="Search customer records">
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>City</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="customerTable">
+                        <tr>
+                            <td colspan="6">Loading customer records...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="table-note" id="tableNote">
+                Loading customer records...
+            </p>
+        </section>
+
+        <!-- Reports -->
+        <section class="content-card" id="reports">
+            <div class="section-heading">
+                <div>
+                    <h2>Quality Reports</h2>
+                    <p>Review and download your quality-check results.</p>
+                </div>
+            </div>
+
+            <p>
+                Run a quality check to calculate duplicate records,
+                missing values, invalid emails and invalid phone numbers.
+                Use Download CSV Report to export customer records and
+                their detected quality status.
+            </p>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>Smart Data Quality Checker © 2026</p>
+            <p>Built with HTML, CSS, JavaScript, Spring Boot and MySQL</p>
+        </footer>
+
+    </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
